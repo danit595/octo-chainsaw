@@ -33,3 +33,5 @@ ENV/
 
 # Windows
 Thumbs.db
+
+*macros
