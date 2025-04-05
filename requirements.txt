@@ -6,4 +6,5 @@ pymsgbox==1.0.9
 pyperclip==1.9.0
 pyrect==0.2.0
 pyscreeze==0.1.28
-pytweening==1.0.7 
+pytweening==1.0.7
+pyinstaller==6.12.0 
