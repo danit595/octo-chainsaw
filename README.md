@@ -1,45 +1,48 @@
 # Auto Clicker
 
-A Windows-based autoclicker application built with Rust, featuring a native graphical user interface.
+A Python-based autoclicker application with a graphical user interface.
 
 ## Features
 
-- Simple and intuitive user interface
+- Simple and intuitive GUI
 - Configurable click delay
 - Start/Stop functionality
-- Status indicator
-- Native Windows look and feel
+- Hotkey support (F6 to toggle)
+- Status display
 
 ## Requirements
 
-- Windows operating system
-- Rust toolchain (latest stable version recommended)
+- Python 3.8 or higher
+- Required packages (install using `pip install -r requirements.txt`):
+  - PyQt6
+  - pyautogui
+  - keyboard
 
-## Building
+## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/danit595/octo-chainsaw.git
-cd octo-chainsaw
-```
-
-2. Build the project:
-```bash
-cargo build --release
-```
-
-3. Run the application:
-```bash
-cargo run --release
-```
+1. Clone the repository
+2. Install the required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ## Usage
 
-1. Launch the application
-2. Enter the desired delay between clicks in milliseconds
-3. Click the "Start" button to begin auto-clicking
-4. Click the button again to stop
+1. Run the application:
+   ```bash
+   python autoclicker.py
+   ```
 
-## License
+2. Enter the desired delay in milliseconds
+3. Click the Start button or press F6 to begin autoclicking
+4. Click Stop or press F6 again to stop
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+## Controls
+
+- Start/Stop Button: Toggle autoclicking
+- F6 Key: Hotkey to toggle autoclicking
+- Delay Input: Set the time between clicks in milliseconds
+
+## Note
+
+This application requires appropriate permissions to simulate mouse clicks. Some applications or games may block automated input. 
