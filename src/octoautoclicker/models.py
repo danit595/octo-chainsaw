@@ -49,6 +49,11 @@ class ClickConfig:
     pixel_trigger_x: int = 0
     pixel_trigger_y: int = 0
     pixel_trigger_color: str = ""
+    region_enabled: bool = False
+    region_x: int = 0
+    region_y: int = 0
+    region_width: int = 0
+    region_height: int = 0
 
     def to_dict(self) -> dict:
         data = asdict(self)

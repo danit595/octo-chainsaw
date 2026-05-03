@@ -191,7 +191,11 @@ class ClickerEngine:
 
     def _do_click(self, config: ClickConfig, jitter_px: int) -> bool:
         try:
-            if config.position_mode == "fixed":
+            if config.region_enabled and config.region_width > 0 and config.region_height > 0:
+                x = config.region_x + random.randint(0, max(0, int(config.region_width) - 1))
+                y = config.region_y + random.randint(0, max(0, int(config.region_height) - 1))
+                pyautogui.moveTo(x, y, _pause=False)
+            elif config.position_mode == "fixed":
                 x = int(config.x)
                 y = int(config.y)
                 if jitter_px > 0:

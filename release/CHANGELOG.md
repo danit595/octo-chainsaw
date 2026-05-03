@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.3.0
+### Region clicks, polish, and a real exe
+- **Region click mode**: enable a checkbox on the Position card and the engine
+  will pick a uniformly random point inside the (X, Y, W, H) box for every
+  click. Useful for natural-looking patterns and anti-detection.
+- **Pulsing status pill**: the colored dot subtly pulses while clicking,
+  recording, or playing.
+- **Built executable shipped** at release/OctoAutoClicker.exe (~20 MB), built
+  from AutoClicker.spec with the new icon, version, and bundled assets.
+
 ## v2.2.0
 ### Quality-of-life pass
 - **CPS slider** on the Auto Clicker tab — drag to set 1-50 clicks/sec; wires

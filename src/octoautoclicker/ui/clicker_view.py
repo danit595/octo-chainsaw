@@ -34,6 +34,11 @@ class ClickerView(ctk.CTkFrame):
         self.pixel_x_var = ctk.StringVar(value="0")
         self.pixel_y_var = ctk.StringVar(value="0")
         self.pixel_color_var = ctk.StringVar(value="")
+        self.region_enabled_var = ctk.BooleanVar(value=False)
+        self.region_x_var = ctk.StringVar(value="0")
+        self.region_y_var = ctk.StringVar(value="0")
+        self.region_w_var = ctk.StringVar(value="0")
+        self.region_h_var = ctk.StringVar(value="0")
 
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=1)
@@ -72,6 +77,11 @@ class ClickerView(ctk.CTkFrame):
                 pixel_trigger_x=int(self.pixel_x_var.get() or 0),
                 pixel_trigger_y=int(self.pixel_y_var.get() or 0),
                 pixel_trigger_color=self.pixel_color_var.get().strip(),
+                region_enabled=bool(self.region_enabled_var.get()),
+                region_x=int(self.region_x_var.get() or 0),
+                region_y=int(self.region_y_var.get() or 0),
+                region_width=int(self.region_w_var.get() or 0),
+                region_height=int(self.region_h_var.get() or 0),
             )
         except ValueError:
             return None
@@ -99,6 +109,11 @@ class ClickerView(ctk.CTkFrame):
         self.pixel_x_var.set(str(config.pixel_trigger_x))
         self.pixel_y_var.set(str(config.pixel_trigger_y))
         self.pixel_color_var.set(config.pixel_trigger_color)
+        self.region_enabled_var.set(bool(config.region_enabled))
+        self.region_x_var.set(str(config.region_x))
+        self.region_y_var.set(str(config.region_y))
+        self.region_w_var.set(str(config.region_width))
+        self.region_h_var.set(str(config.region_height))
         self._update_sequence_indicator()
 
     def set_sequence(self, sequence) -> None:
@@ -348,6 +363,44 @@ class ClickerView(ctk.CTkFrame):
             corner_radius=10,
         ).grid(row=0, column=2, sticky="sew", padx=(6, 0), pady=(14, 0))
 
+        # Region (random point inside box) — overrides single-point if enabled
+        region_check_row = ctk.CTkFrame(position_card, fg_color="transparent")
+        region_check_row.grid(row=3, column=0, sticky="ew", padx=18, pady=(0, 4))
+        ctk.CTkCheckBox(
+            region_check_row,
+            text="Click random point inside region (overrides above)",
+            variable=self.region_enabled_var,
+            fg_color=self.palette["primary"],
+            hover_color=self.palette["primary_hover"],
+            text_color=self.palette["text"],
+        ).grid(row=0, column=0, sticky="w")
+
+        region_row = ctk.CTkFrame(position_card, fg_color="transparent")
+        region_row.grid(row=4, column=0, sticky="ew", padx=18, pady=(0, 18))
+        for i in range(5):
+            region_row.grid_columnconfigure(i, weight=1)
+        LabeledEntry(region_row, self.palette, "REGION X", self.region_x_var).grid(
+            row=0, column=0, sticky="ew", padx=(0, 4)
+        )
+        LabeledEntry(region_row, self.palette, "REGION Y", self.region_y_var).grid(
+            row=0, column=1, sticky="ew", padx=4
+        )
+        LabeledEntry(region_row, self.palette, "WIDTH", self.region_w_var).grid(
+            row=0, column=2, sticky="ew", padx=4
+        )
+        LabeledEntry(region_row, self.palette, "HEIGHT", self.region_h_var).grid(
+            row=0, column=3, sticky="ew", padx=4
+        )
+        ctk.CTkButton(
+            region_row,
+            text="🎯  Top-left",
+            command=self._pick_region_origin,
+            fg_color=self.palette["surface_alt"],
+            hover_color=self.palette["border"],
+            text_color=self.palette["text"],
+            corner_radius=10,
+        ).grid(row=0, column=4, sticky="sew", padx=(4, 0), pady=(14, 0))
+
         # Targeting card (window + pixel trigger)
         target_card = Card(container, self.palette)
         target_card.grid(row=4, column=0, sticky="ew", pady=14)
@@ -501,6 +554,14 @@ class ClickerView(ctk.CTkFrame):
         self.seconds.set("0")
         self.milliseconds.set(str(ms))
         self.cps_value_label.configure(text=f"{cps} CPS  ({ms} ms)")
+
+    def _pick_region_origin(self) -> None:
+        def receive(x: int, y: int) -> None:
+            self.region_x_var.set(str(x))
+            self.region_y_var.set(str(y))
+            self.region_enabled_var.set(True)
+
+        self.on_pick_position(receive)
 
     def _sample_pixel(self) -> None:
         def receive(x: int, y: int) -> None:

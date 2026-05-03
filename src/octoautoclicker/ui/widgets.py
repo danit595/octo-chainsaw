@@ -72,12 +72,44 @@ class StatusPill(ctk.CTkFrame):
         )
         self.label.grid(row=0, column=1)
         self._state = "idle"
+        self._pulse_after = None
+        self._pulse_phase = 0
 
     def set_state(self, state: str, label: str | None = None) -> None:
         self._state = state
         text, color_key, _ = self.STATES.get(state, self.STATES["idle"])
         self.label.configure(text=label or text, text_color=self.palette[color_key])
         self.dot.configure(text_color=self.palette[color_key])
+        if state in ("running", "recording", "playing"):
+            self._start_pulse()
+        else:
+            self._stop_pulse()
+
+    def _start_pulse(self) -> None:
+        if self._pulse_after is not None:
+            return
+        self._pulse()
+
+    def _pulse(self) -> None:
+        self._pulse_phase = (self._pulse_phase + 1) % 2
+        size = 16 if self._pulse_phase == 0 else 12
+        try:
+            self.dot.configure(font=("Segoe UI", size))
+            self._pulse_after = self.after(420, self._pulse)
+        except Exception:
+            self._pulse_after = None
+
+    def _stop_pulse(self) -> None:
+        if self._pulse_after is not None:
+            try:
+                self.after_cancel(self._pulse_after)
+            except Exception:
+                pass
+            self._pulse_after = None
+        try:
+            self.dot.configure(font=("Segoe UI", 14))
+        except Exception:
+            pass
 
 
 class StatTile(ctk.CTkFrame):

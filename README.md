@@ -21,6 +21,8 @@ presets, and lifetime stats.
 - Toast notifications instead of disruptive modal dialogs.
 
 ### Clicker engine
+- **Region click mode**: define an (X, Y, W, H) box and the engine picks a
+  uniformly random point inside it for every click.
 - Configurable timing jitter (ms) and position jitter (px) for natural-looking
   clicks.
 - Loop or fixed-count repeat modes.

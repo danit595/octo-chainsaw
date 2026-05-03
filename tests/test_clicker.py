@@ -123,6 +123,32 @@ def test_fixed_position_moves_first(clicker_module):
     assert (42, 99) in stub.move_calls
 
 
+def test_region_mode_targets_inside_box(clicker_module):
+    engine_module, stub = clicker_module
+    from octoautoclicker.models import ClickConfig
+
+    done = threading.Event()
+    engine = engine_module.ClickerEngine(
+        on_state_change=lambda r: None if r else done.set(),
+    )
+    cfg = ClickConfig(
+        interval_seconds=0.001,
+        repeat_mode="fixed_count",
+        repeat_count=20,
+        region_enabled=True,
+        region_x=100,
+        region_y=200,
+        region_width=50,
+        region_height=30,
+    )
+    engine.start(cfg)
+    assert done.wait(2.0)
+    assert len(stub.move_calls) == 20
+    for x, y in stub.move_calls:
+        assert 100 <= x < 150
+        assert 200 <= y < 230
+
+
 def test_stop_halts_loop(clicker_module):
     engine_module, stub = clicker_module
     from octoautoclicker.models import ClickConfig
