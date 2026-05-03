@@ -6,7 +6,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -24,6 +23,7 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
 
 # IDE
 .vscode/
@@ -31,7 +31,17 @@ ENV/
 *.swp
 *.swo
 
-# Windows
-Thumbs.db
+# Pytest / Mypy / Coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
+# OS
+Thumbs.db
+.DS_Store
+
+# Build artifacts (keep release/ tracked but ignore generated dist/)
+dist/
 *macros

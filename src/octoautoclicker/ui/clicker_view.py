@@ -7,11 +7,6 @@ from typing import Callable
 
 import customtkinter as ctk
 
-try:
-    import pyautogui  # type: ignore
-except Exception:  # pragma: no cover
-    pyautogui = None
-
 from ..models import ClickConfig
 from . import theme as t
 from .widgets import Card, LabeledEntry, SectionHeader, StatTile, StatusPill
