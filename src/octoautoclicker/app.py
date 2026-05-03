@@ -93,7 +93,7 @@ class App:
             pass
 
         if pyautogui is not None:
-            pyautogui.FAILSAFE = True
+            pyautogui.FAILSAFE = bool(self.settings.failsafe_enabled)
             pyautogui.PAUSE = 0
 
     # ---------- view setup ----------
@@ -195,14 +195,31 @@ class App:
     def _toggle_clicker(self, config: ClickConfig | None) -> None:
         if self.clicker.running:
             self.clicker.stop()
+            self._play_sound("stop")
             return
         if config is None:
             self._toast("Invalid input — check the interval and counts.", "error")
             return
+        delay = max(0, int(self.settings.start_delay_seconds or 0))
+        if delay > 0:
+            self._countdown_then_start(config, delay)
+        else:
+            self._actually_start(config)
+
+    def _countdown_then_start(self, config: ClickConfig, remaining: int) -> None:
+        if remaining <= 0:
+            self._actually_start(config)
+            return
+        self._toast(f"Starting in {remaining}…", "info", 950)
+        self.window.after(1000, lambda: self._countdown_then_start(config, remaining - 1))
+
+    def _actually_start(self, config: ClickConfig) -> None:
         self.clicker.reset_count()
         self._session_clicks = 0
+        self._cps_window.clear()
         self._session_started_at = time.monotonic()
         if self.clicker.start(config):
+            self._play_sound("start")
             if self.settings.minimize_on_start:
                 self.window.iconify()
             self._toast("Clicking started.", "success")
@@ -490,6 +507,8 @@ class App:
 
         self.hotkeys.apply(settings.hotkeys)
         self.stats_view.update_shortcuts(settings.hotkeys)
+        if pyautogui is not None:
+            pyautogui.FAILSAFE = bool(settings.failsafe_enabled)
         self.store.save_settings(settings)
 
     # ---------- shared ----------
@@ -499,7 +518,21 @@ class App:
         if self.recorder.recording:
             self.recorder.stop()
         self.player.stop()
+        self._play_sound("stop")
         self._toast("Emergency stop.", "warning")
+
+    def _play_sound(self, kind: str) -> None:
+        if not self.settings.sound_enabled:
+            return
+        try:
+            import winsound  # type: ignore
+
+            if kind == "start":
+                winsound.MessageBeep(winsound.MB_ICONASTERISK)
+            else:
+                winsound.MessageBeep(winsound.MB_OK)
+        except Exception:
+            pass
 
     def _on_engine_error(self, msg: str) -> None:
         self._on_main_thread(lambda m=msg: self._toast(m, "error", 5000))

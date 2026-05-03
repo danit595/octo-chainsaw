@@ -29,6 +29,9 @@ class AppSettings:
     show_toasts: bool = True
     last_profile: str = "Default"
     hotkeys: HotkeyConfig = field(default_factory=HotkeyConfig)
+    start_delay_seconds: int = 0
+    failsafe_enabled: bool = True
+    sound_enabled: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -38,6 +41,9 @@ class AppSettings:
             "show_toasts": self.show_toasts,
             "last_profile": self.last_profile,
             "hotkeys": self.hotkeys.to_dict(),
+            "start_delay_seconds": self.start_delay_seconds,
+            "failsafe_enabled": self.failsafe_enabled,
+            "sound_enabled": self.sound_enabled,
         }
 
     @classmethod
@@ -49,6 +55,9 @@ class AppSettings:
             show_toasts=data.get("show_toasts", True),
             last_profile=data.get("last_profile", "Default"),
             hotkeys=HotkeyConfig.from_dict(data.get("hotkeys", {})),
+            start_delay_seconds=int(data.get("start_delay_seconds", 0)),
+            failsafe_enabled=bool(data.get("failsafe_enabled", True)),
+            sound_enabled=bool(data.get("sound_enabled", False)),
         )
 
 

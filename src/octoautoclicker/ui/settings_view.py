@@ -154,26 +154,48 @@ class SettingsView(ctk.CTkFrame):
 
         bbox = ctk.CTkFrame(behavior, fg_color="transparent")
         bbox.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 18))
+        bbox.grid_columnconfigure(1, weight=1)
         self.minimize_var = ctk.BooleanVar(value=self.settings.minimize_on_start)
         self.toasts_var = ctk.BooleanVar(value=self.settings.show_toasts)
-        ctk.CTkCheckBox(
+        self.failsafe_var = ctk.BooleanVar(value=self.settings.failsafe_enabled)
+        self.sound_var = ctk.BooleanVar(value=self.settings.sound_enabled)
+        self.delay_var = ctk.StringVar(value=str(self.settings.start_delay_seconds))
+
+        for r, (label, var) in enumerate(
+            [
+                ("Minimize main window when clicking starts", self.minimize_var),
+                ("Show toast notifications", self.toasts_var),
+                ("Enable PyAutoGUI failsafe (stop when mouse hits a corner)", self.failsafe_var),
+                ("Play sound on start / stop", self.sound_var),
+            ]
+        ):
+            ctk.CTkCheckBox(
+                bbox,
+                text=label,
+                variable=var,
+                command=self._emit,
+                fg_color=self.palette["primary"],
+                hover_color=self.palette["primary_hover"],
+                text_color=self.palette["text"],
+            ).grid(row=r, column=0, columnspan=2, sticky="w", pady=4)
+
+        ctk.CTkLabel(
             bbox,
-            text="Minimize main window when clicking starts",
-            variable=self.minimize_var,
-            command=self._emit,
-            fg_color=self.palette["primary"],
-            hover_color=self.palette["primary_hover"],
+            text="Start delay (seconds, countdown before clicker engages)",
+            font=("Segoe UI", 12),
             text_color=self.palette["text"],
-        ).grid(row=0, column=0, sticky="w", pady=4)
-        ctk.CTkCheckBox(
+        ).grid(row=4, column=0, sticky="w", pady=(8, 4))
+        delay_entry = ctk.CTkEntry(
             bbox,
-            text="Show toast notifications",
-            variable=self.toasts_var,
-            command=self._emit,
-            fg_color=self.palette["primary"],
-            hover_color=self.palette["primary_hover"],
+            textvariable=self.delay_var,
+            width=80,
+            fg_color=self.palette["surface_alt"],
+            border_color=self.palette["border"],
             text_color=self.palette["text"],
-        ).grid(row=1, column=0, sticky="w", pady=4)
+        )
+        delay_entry.grid(row=4, column=1, sticky="e", pady=(8, 4))
+        delay_entry.bind("<FocusOut>", lambda _: self._emit())
+        delay_entry.bind("<Return>", lambda _: self._emit())
 
     def _populate(self) -> None:
         pass  # vars are bound to settings; no extra work needed
@@ -183,6 +205,12 @@ class SettingsView(ctk.CTkFrame):
         self.settings.accent = self.accent_var.get()
         self.settings.minimize_on_start = bool(self.minimize_var.get())
         self.settings.show_toasts = bool(self.toasts_var.get())
+        self.settings.failsafe_enabled = bool(self.failsafe_var.get())
+        self.settings.sound_enabled = bool(self.sound_var.get())
+        try:
+            self.settings.start_delay_seconds = max(0, int(self.delay_var.get() or 0))
+        except ValueError:
+            self.settings.start_delay_seconds = 0
         self.settings.hotkeys = HotkeyConfig(
             toggle_clicker=self.hk_vars["toggle_clicker"].get().strip() or "f6",
             toggle_recording=self.hk_vars["toggle_recording"].get().strip() or "f7",

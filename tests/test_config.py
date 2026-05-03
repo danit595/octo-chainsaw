@@ -27,10 +27,16 @@ def test_settings_round_trip(tmp_path: Path):
         show_toasts=False,
         last_profile="Speed",
         hotkeys=HotkeyConfig(toggle_clicker="ctrl+1"),
+        start_delay_seconds=5,
+        failsafe_enabled=False,
+        sound_enabled=True,
     )
     store.save_settings(settings)
     restored = store.load_settings()
     assert restored == settings
+    assert restored.start_delay_seconds == 5
+    assert restored.failsafe_enabled is False
+    assert restored.sound_enabled is True
 
 
 def test_profiles_default_seed(tmp_path: Path):

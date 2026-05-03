@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.4.0
+### Settings: delay, failsafe, sound
+- **Delayed start**: countdown N seconds before clicker actually engages.
+  Toasts tick down 'Starting in 3…2…1…' so you can park the cursor.
+- **Failsafe toggle**: PyAutoGUI screen-corner failsafe is now opt-in/out
+  from Settings. Default remains on.
+- **Sound cues**: optional system beeps on start and stop (winsound on
+  Windows, no-op elsewhere).
+- AppSettings serialization carries the new fields with a 50-test green
+  suite covering the round-trip.
+
 ## v2.3.0
 ### Region clicks, polish, and a real exe
 - **Region click mode**: enable a checkbox on the Position card and the engine
