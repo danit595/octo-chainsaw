@@ -87,6 +87,12 @@ class MacroView(ctk.CTkFrame):
             self.save_button.configure(state="disabled")
 
     def set_macros(self, names: list[str]) -> None:
+        self._all_names = list(names)
+        self._render_macros()
+
+    def _render_macros(self) -> None:
+        query = (self.search_var.get() if hasattr(self, "search_var") else "").strip().lower()
+        names = [n for n in getattr(self, "_all_names", []) if not query or query in n.lower()]
         self.macro_listbox.configure(state="normal")
         self.macro_listbox.delete("1.0", "end")
         for name in names:
@@ -183,11 +189,23 @@ class MacroView(ctk.CTkFrame):
         card = Card(self, self.palette)
         card.grid(row=1, column=1, sticky="nsew", padx=(12, 24), pady=(8, 24))
         card.grid_columnconfigure(0, weight=1)
-        card.grid_rowconfigure(1, weight=1)
+        card.grid_rowconfigure(2, weight=1)
 
         SectionHeader(
             card, self.palette, "Library", "Stored macros, click a name to select."
-        ).grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 8))
+        ).grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 4))
+
+        self.search_var = ctk.StringVar()
+        self.search_var.trace_add("write", lambda *_: self._render_macros())
+        ctk.CTkEntry(
+            card,
+            textvariable=self.search_var,
+            placeholder_text="🔍  Filter…",
+            fg_color=self.palette["surface_alt"],
+            border_color=self.palette["border"],
+            text_color=self.palette["text"],
+            height=32,
+        ).grid(row=1, column=0, sticky="ew", padx=18, pady=(4, 8))
 
         list_wrap = ctk.CTkFrame(
             card,
@@ -196,7 +214,7 @@ class MacroView(ctk.CTkFrame):
             border_color=self.palette["border"],
             border_width=1,
         )
-        list_wrap.grid(row=1, column=0, sticky="nsew", padx=18, pady=(0, 12))
+        list_wrap.grid(row=2, column=0, sticky="nsew", padx=18, pady=(0, 12))
         list_wrap.grid_columnconfigure(0, weight=1)
         list_wrap.grid_rowconfigure(0, weight=1)
 
@@ -213,7 +231,7 @@ class MacroView(ctk.CTkFrame):
         self.selected_var = ctk.StringVar(value="")
 
         controls = ctk.CTkFrame(card, fg_color="transparent")
-        controls.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 12))
+        controls.grid(row=3, column=0, sticky="ew", padx=18, pady=(0, 12))
         controls.grid_columnconfigure((0, 1), weight=1)
 
         self.speed_var = ctk.StringVar(value="1.0")
@@ -262,10 +280,10 @@ class MacroView(ctk.CTkFrame):
             text_color="#ffffff",
             corner_radius=10,
         )
-        self.play_button.grid(row=3, column=0, sticky="ew", padx=18, pady=(0, 8))
+        self.play_button.grid(row=4, column=0, sticky="ew", padx=18, pady=(0, 8))
 
         action_row = ctk.CTkFrame(card, fg_color="transparent")
-        action_row.grid(row=4, column=0, sticky="ew", padx=18, pady=(0, 18))
+        action_row.grid(row=5, column=0, sticky="ew", padx=18, pady=(0, 18))
         action_row.grid_columnconfigure((0, 1, 2), weight=1)
 
         action_row.grid_columnconfigure((0, 1, 2, 3), weight=1)

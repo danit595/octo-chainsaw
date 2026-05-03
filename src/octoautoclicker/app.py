@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import time
@@ -31,10 +32,12 @@ from .engines.macros import (
 from .engines.tray import TrayIcon
 from .models import ClickConfig, Macro, Profile, SequenceStep, Stats
 from .ui import theme as t
+from .ui.about_view import AboutView
 from .ui.clicker_view import ClickerView
 from .ui.macro_editor import MacroEditor
 from .ui.macro_view import MacroView
 from .ui.main_window import MainWindow
+from .ui.mini_controller import MiniController
 from .ui.profiles_view import ProfilesView
 from .ui.sequence_view import SequenceView
 from .ui.settings_view import SettingsView
@@ -79,6 +82,8 @@ class App:
         self._session_clicks = 0
         self._session_started_at: float | None = None
         self._sequence: list[SequenceStep] = []
+        self._mini: MiniController | None = None
+        self._cps_window: list[float] = []
 
         self._build_views()
         self._wire_hotkeys()
@@ -124,6 +129,8 @@ class App:
             self.palette,
             on_apply=self._apply_profile,
             on_delete=self._delete_profile,
+            on_export=self._export_profile,
+            on_import=self._import_profile,
         )
         self.settings_view = SettingsView(
             self.window.content,
@@ -132,6 +139,7 @@ class App:
             on_change=self._on_settings_change,
         )
         self.stats_view = StatsView(self.window.content, self.palette)
+        self.about_view = AboutView(self.window.content, self.palette)
 
         self.window.register_view("clicker", "Auto Clicker", "🎯", self.clicker_view)
         self.window.register_view("sequence", "Sequence", "⛓", self.sequence_view)
@@ -139,6 +147,8 @@ class App:
         self.window.register_view("profiles", "Profiles", "📚", self.profiles_view)
         self.window.register_view("settings", "Settings", "⚙", self.settings_view)
         self.window.register_view("stats", "Stats", "📊", self.stats_view)
+        self.window.register_view("about", "About", "ⓘ", self.about_view)
+        self.window.add_sidebar_action("⛶  Mini view", self._toggle_mini)
 
     def _refresh_all(self) -> None:
         # Apply last-used profile if it exists
@@ -197,8 +207,30 @@ class App:
                 self.window.iconify()
             self._toast("Clicking started.", "success")
 
+    def _toggle_mini(self) -> None:
+        if self._mini is None or not self._mini.winfo_exists():
+            self._mini = MiniController(
+                self.window,
+                self.palette,
+                on_toggle=self._hotkey_toggle_clicker,
+                on_emergency_stop=self._emergency_stop,
+                on_open_main=self._restore_window,
+            )
+            self._mini.set_running(self.clicker.running)
+        else:
+            try:
+                if self._mini.state() == "withdrawn":
+                    self._mini.deiconify()
+                else:
+                    self._mini.lift()
+                    self._mini.focus()
+            except Exception:
+                pass
+
     def _on_clicker_state(self, running: bool) -> None:
         self._on_main_thread(lambda: self.clicker_view.set_running(running))
+        if self._mini is not None and self._mini.winfo_exists():
+            self._on_main_thread(lambda r=running: self._mini.set_running(r))
         if not running and self._session_started_at is not None:
             elapsed = time.monotonic() - self._session_started_at
             self._session_started_at = None
@@ -210,7 +242,18 @@ class App:
 
     def _on_click_count(self, count: int) -> None:
         self._session_clicks = count
+        now = time.monotonic()
+        self._cps_window.append(now)
+        cutoff = now - 5.0
+        self._cps_window = [t_ for t_ in self._cps_window if t_ >= cutoff]
+        if len(self._cps_window) >= 2:
+            span = self._cps_window[-1] - self._cps_window[0]
+            cps = (len(self._cps_window) - 1) / span if span > 0 else 0.0
+        else:
+            cps = 0.0
         self._on_main_thread(lambda c=count: self.clicker_view.update_count(c))
+        if self._mini is not None and self._mini.winfo_exists():
+            self._on_main_thread(lambda c=count, p=cps: self._mini.update_metrics(p, c))
 
     def _pick_position(self, callback: Callable[[int, int], None]) -> None:
         if pyautogui is None:
@@ -259,6 +302,42 @@ class App:
         self.store.save_profiles(self.profiles)
         self.profiles_view.set_profiles(self.profiles)
         self._toast(f"Deleted profile '{name}'.", "info")
+
+    def _export_profile(self, name: str) -> None:
+        profile = next((p for p in self.profiles if p.name == name), None)
+        if profile is None:
+            self._toast("Profile not found.", "error")
+            return
+        target = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            initialfile=f"{name}.profile.json",
+            filetypes=[("Profile files", "*.json"), ("All files", "*.*")],
+        )
+        if not target:
+            return
+        Path(target).write_text(json.dumps(profile.to_dict(), indent=2), encoding="utf-8")
+        self._toast(f"Exported '{name}'.", "success")
+
+    def _import_profile(self) -> None:
+        source = filedialog.askopenfilename(
+            filetypes=[("Profile files", "*.json"), ("All files", "*.*")]
+        )
+        if not source:
+            return
+        try:
+            data = json.loads(Path(source).read_text("utf-8"))
+            profile = Profile.from_dict(data)
+        except Exception as exc:
+            self._toast(f"Invalid profile file: {exc}", "error")
+            return
+        existing = next((p for p in self.profiles if p.name == profile.name), None)
+        if existing:
+            existing.config = profile.config
+        else:
+            self.profiles.append(profile)
+        self.store.save_profiles(self.profiles)
+        self.profiles_view.set_profiles(self.profiles)
+        self._toast(f"Imported profile '{profile.name}'.", "success")
 
     # ---------- macros ----------
 

@@ -43,6 +43,8 @@ a = Analysis(
         'octoautoclicker.ui.clicker_view',
         'octoautoclicker.ui.macro_view',
         'octoautoclicker.ui.macro_editor',
+        'octoautoclicker.ui.mini_controller',
+        'octoautoclicker.ui.about_view',
         'octoautoclicker.ui.sequence_view',
         'octoautoclicker.ui.profiles_view',
         'octoautoclicker.ui.settings_view',

@@ -203,6 +203,41 @@ class ClickerView(ctk.CTkFrame):
             row=0, column=3, sticky="ew", padx=(6, 0)
         )
 
+        # CPS quick-tune slider card
+        cps_card = Card(container, self.palette)
+        cps_card.grid(row=6, column=0, sticky="ew", pady=14)
+        cps_card.grid_columnconfigure(0, weight=1)
+        SectionHeader(
+            cps_card,
+            self.palette,
+            "Quick rate (CPS)",
+            "Drag to set clicks-per-second; updates the interval fields.",
+        ).grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 8))
+        cps_row = ctk.CTkFrame(cps_card, fg_color="transparent")
+        cps_row.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 18))
+        cps_row.grid_columnconfigure(0, weight=1)
+
+        self.cps_value_label = ctk.CTkLabel(
+            cps_row,
+            text="10 CPS  (100 ms)",
+            font=("Segoe UI Variable", 14, "bold"),
+            text_color=self.palette["text"],
+        )
+        self.cps_value_label.grid(row=0, column=0, sticky="w")
+
+        self.cps_slider = ctk.CTkSlider(
+            cps_row,
+            from_=1,
+            to=50,
+            number_of_steps=49,
+            command=self._on_cps_slider,
+            button_color=self.palette["primary"],
+            button_hover_color=self.palette["primary_hover"],
+            progress_color=self.palette["primary"],
+        )
+        self.cps_slider.set(10)
+        self.cps_slider.grid(row=1, column=0, sticky="ew", pady=(6, 0))
+
         # Click options card
         options_card = Card(container, self.palette)
         options_card.grid(row=1, column=0, sticky="ew", pady=14)
@@ -457,6 +492,15 @@ class ClickerView(ctk.CTkFrame):
             self.position_mode_var.set("fixed")
 
         self.on_pick_position(receive)
+
+    def _on_cps_slider(self, value: float) -> None:
+        cps = max(1, int(round(value)))
+        ms = max(1, int(round(1000.0 / cps)))
+        self.hours.set("0")
+        self.minutes.set("0")
+        self.seconds.set("0")
+        self.milliseconds.set(str(ms))
+        self.cps_value_label.configure(text=f"{cps} CPS  ({ms} ms)")
 
     def _sample_pixel(self) -> None:
         def receive(x: int, y: int) -> None:

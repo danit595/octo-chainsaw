@@ -38,7 +38,12 @@ presets, and lifetime stats.
   `%APPDATA%\OctoAutoClicker`.
 
 ### Productivity
-- Save and recall named **Profiles** for click configurations.
+- **Mini view** — compact always-on-top window with start/stop, live CPS,
+  and a click counter. Open from the sidebar.
+- **CPS slider** for fast interval tuning (1-50 clicks/sec).
+- Save and recall named **Profiles** for click configurations, including
+  **import / export to JSON**.
+- **Macro library search** — substring filter over your saved macros.
 - **Click Sequence** tab: define a queue of (x, y, button, delay) steps that
   cycle in order, replacing single-click mode while the queue is non-empty.
 - **Targeting**: optionally restrict clicking to a focused window (substring

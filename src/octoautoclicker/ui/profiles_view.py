@@ -18,11 +18,15 @@ class ProfilesView(ctk.CTkFrame):
         palette: dict[str, str],
         on_apply: Callable[[Profile], None],
         on_delete: Callable[[str], None],
+        on_export: Callable[[str], None] | None = None,
+        on_import: Callable[[], None] | None = None,
     ):
         super().__init__(master, fg_color="transparent")
         self.palette = palette
         self.on_apply = on_apply
         self.on_delete = on_delete
+        self.on_export = on_export
+        self.on_import = on_import
         self._profiles: list[Profile] = []
         self._cards: list[ctk.CTkFrame] = []
 
@@ -55,18 +59,38 @@ class ProfilesView(ctk.CTkFrame):
     def _build_header(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew", padx=24, pady=(24, 8))
+        header.grid_columnconfigure(0, weight=1)
+        text_box = ctk.CTkFrame(header, fg_color="transparent")
+        text_box.grid(row=0, column=0, sticky="w")
         ctk.CTkLabel(
-            header,
+            text_box,
             text="Profiles",
             font=t.FONT_HEADING,
             text_color=self.palette["text"],
         ).pack(anchor="w")
         ctk.CTkLabel(
-            header,
+            text_box,
             text="Save and re-apply common clicker configurations.",
             font=t.FONT_MUTED,
             text_color=self.palette["text_muted"],
         ).pack(anchor="w")
+
+        if self.on_import is not None or self.on_export is not None:
+            actions = ctk.CTkFrame(header, fg_color="transparent")
+            actions.grid(row=0, column=1, sticky="e")
+            if self.on_import is not None:
+                ctk.CTkButton(
+                    actions,
+                    text="Import",
+                    command=self.on_import,
+                    fg_color="transparent",
+                    border_color=self.palette["border"],
+                    border_width=1,
+                    text_color=self.palette["text"],
+                    hover_color=self.palette["surface_alt"],
+                    height=34,
+                    corner_radius=10,
+                ).grid(row=0, column=0, padx=(0, 8))
 
     def _build_grid(self) -> None:
         wrap = ctk.CTkScrollableFrame(self, fg_color="transparent")
@@ -113,6 +137,7 @@ class ProfilesView(ctk.CTkFrame):
         actions.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 12))
         actions.grid_columnconfigure((0, 1), weight=1)
 
+        actions.grid_columnconfigure((0, 1, 2), weight=1)
         ctk.CTkButton(
             actions,
             text="Apply",
@@ -125,6 +150,18 @@ class ProfilesView(ctk.CTkFrame):
         ).grid(row=0, column=0, sticky="ew", padx=4)
         ctk.CTkButton(
             actions,
+            text="Export",
+            command=lambda n=profile.name: self.on_export(n) if self.on_export else None,
+            fg_color="transparent",
+            border_color=self.palette["border"],
+            border_width=1,
+            text_color=self.palette["text"],
+            hover_color=self.palette["surface_alt"],
+            height=34,
+            corner_radius=8,
+        ).grid(row=0, column=1, sticky="ew", padx=4)
+        ctk.CTkButton(
+            actions,
             text="Delete",
             command=lambda n=profile.name: self.on_delete(n),
             fg_color="transparent",
@@ -134,5 +171,5 @@ class ProfilesView(ctk.CTkFrame):
             hover_color=self.palette["surface_alt"],
             height=34,
             corner_radius=8,
-        ).grid(row=0, column=1, sticky="ew", padx=4)
+        ).grid(row=0, column=2, sticky="ew", padx=4)
         return card

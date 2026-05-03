@@ -75,6 +75,24 @@ class MainWindow(ctk.CTk):
         btn.grid(sticky="ew", pady=2, padx=8)
         self._buttons[key] = btn
 
+    def add_sidebar_action(self, label: str, command) -> None:
+        """Append a non-nav action button to the sidebar."""
+        btn = ctk.CTkButton(
+            self.sidebar_buttons,
+            text=label,
+            command=command,
+            corner_radius=10,
+            height=36,
+            anchor="w",
+            font=("Segoe UI", 12),
+            fg_color="transparent",
+            border_color=self.palette["border"],
+            border_width=1,
+            text_color=self.palette["text"],
+            hover_color=self.palette["surface_alt"],
+        )
+        btn.grid(sticky="ew", pady=(12, 2), padx=8)
+
     def show(self, key: str) -> None:
         if key not in self._views:
             return

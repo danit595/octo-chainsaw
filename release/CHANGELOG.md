@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.2.0
+### Quality-of-life pass
+- **CPS slider** on the Auto Clicker tab — drag to set 1-50 clicks/sec; wires
+  back into the interval fields.
+- **Profile import / export** as JSON, plus an Import button on the Profiles
+  page header and per-card Export.
+- **Macro library search** — live substring filter above the list.
+- **Mini view** — compact always-on-top floating controller with start/stop,
+  status dot, live CPS and total click counter, and a button to restore the
+  main window. Toggled from the new sidebar action.
+- **About** page with what-it-does, tips, and dependency credits.
+- App boots are now covered by a smoke test (see tests/test_smoke.py).
+
 ## v2.1.0
 ### More UX wins on top of v2.0
 - New **Click Sequence** tab and engine: queue of (x, y, button, type, delay)
