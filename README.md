@@ -39,6 +39,12 @@ presets, and lifetime stats.
 
 ### Productivity
 - Save and recall named **Profiles** for click configurations.
+- **Click Sequence** tab: define a queue of (x, y, button, delay) steps that
+  cycle in order, replacing single-click mode while the queue is non-empty.
+- **Targeting**: optionally restrict clicking to a focused window (substring
+  match) and/or only fire when a screen pixel matches a target color.
+- **Macro editor**: open any saved macro, retime or delete events in place.
+- **System tray icon**: show / toggle clicker / emergency stop / quit.
 - Customize all four global hotkeys from the Settings tab.
 - Lifetime stats: total clicks, sessions, active time, macros played.
 

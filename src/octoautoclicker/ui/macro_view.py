@@ -23,6 +23,7 @@ class MacroView(ctk.CTkFrame):
         on_delete: Callable[[str], None],
         on_export: Callable[[str], None],
         on_import: Callable[[], None],
+        on_edit: Callable[[str], None] | None = None,
     ):
         super().__init__(master, fg_color="transparent")
         self.palette = palette
@@ -33,6 +34,7 @@ class MacroView(ctk.CTkFrame):
         self.on_delete = on_delete
         self.on_export = on_export
         self.on_import = on_import
+        self.on_edit = on_edit
         self._has_buffer = False
 
         self.grid_columnconfigure(0, weight=1)
@@ -266,8 +268,10 @@ class MacroView(ctk.CTkFrame):
         action_row.grid(row=4, column=0, sticky="ew", padx=18, pady=(0, 18))
         action_row.grid_columnconfigure((0, 1, 2), weight=1)
 
+        action_row.grid_columnconfigure((0, 1, 2, 3), weight=1)
         for col, (label, cmd) in enumerate(
             [
+                ("Edit", self._edit),
                 ("Delete", self._delete),
                 ("Export", self._export),
                 ("Import", self.on_import),
@@ -328,3 +332,8 @@ class MacroView(ctk.CTkFrame):
         name = self.selected_var.get()
         if name:
             self.on_export(name)
+
+    def _edit(self) -> None:
+        name = self.selected_var.get()
+        if name and self.on_edit is not None:
+            self.on_edit(name)

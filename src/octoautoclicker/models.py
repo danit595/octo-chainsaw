@@ -12,6 +12,25 @@ PositionMode = Literal["current", "fixed"]
 
 
 @dataclass
+class SequenceStep:
+    """A single step in a click sequence: where, which button, post-delay."""
+
+    x: int = 0
+    y: int = 0
+    button: MouseButton = "left"
+    click_type: ClickType = "single"
+    delay_ms: int = 100
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SequenceStep":
+        allowed = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in allowed})
+
+
+@dataclass
 class ClickConfig:
     """Immutable-ish snapshot of clicker settings consumed by the engine."""
 
@@ -25,14 +44,27 @@ class ClickConfig:
     y: int = 0
     jitter_ms: int = 0
     jitter_pixels: int = 0
+    sequence: list[SequenceStep] = field(default_factory=list)
+    target_window: str = ""
+    pixel_trigger_x: int = 0
+    pixel_trigger_y: int = 0
+    pixel_trigger_color: str = ""
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        data = asdict(self)
+        data["sequence"] = [s for s in data["sequence"]]
+        return data
 
     @classmethod
     def from_dict(cls, data: dict) -> "ClickConfig":
         allowed = {f for f in cls.__dataclass_fields__}
-        return cls(**{k: v for k, v in data.items() if k in allowed})
+        kwargs = {k: v for k, v in data.items() if k in allowed}
+        if "sequence" in kwargs and kwargs["sequence"] is not None:
+            kwargs["sequence"] = [
+                SequenceStep.from_dict(s) if isinstance(s, dict) else s
+                for s in kwargs["sequence"]
+            ]
+        return cls(**kwargs)
 
 
 @dataclass

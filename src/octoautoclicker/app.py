@@ -28,12 +28,15 @@ from .engines.macros import (
     load_macro,
     save_macro,
 )
-from .models import ClickConfig, Macro, Profile, Stats
+from .engines.tray import TrayIcon
+from .models import ClickConfig, Macro, Profile, SequenceStep, Stats
 from .ui import theme as t
 from .ui.clicker_view import ClickerView
+from .ui.macro_editor import MacroEditor
 from .ui.macro_view import MacroView
 from .ui.main_window import MainWindow
 from .ui.profiles_view import ProfilesView
+from .ui.sequence_view import SequenceView
 from .ui.settings_view import SettingsView
 from .ui.stats_view import StatsView
 
@@ -64,15 +67,25 @@ class App:
             on_error=self._on_engine_error,
         )
         self.hotkeys = HotkeyManager()
+        self.tray = TrayIcon(
+            on_show=lambda: self._on_main_thread(self._restore_window),
+            on_toggle_clicker=lambda: self._on_main_thread(self._hotkey_toggle_clicker),
+            on_emergency_stop=lambda: self._on_main_thread(self._emergency_stop),
+            on_quit=lambda: self._on_main_thread(self._quit_app),
+            accent=self.palette["primary"],
+        )
 
         self._buffered_macro: Macro | None = None
         self._session_clicks = 0
         self._session_started_at: float | None = None
+        self._sequence: list[SequenceStep] = []
 
         self._build_views()
         self._wire_hotkeys()
         self._refresh_all()
         self.window.show("clicker")
+        if self.tray.start():
+            pass
 
         if pyautogui is not None:
             pyautogui.FAILSAFE = True
@@ -98,6 +111,13 @@ class App:
             on_delete=self._delete_macro,
             on_export=self._export_macro,
             on_import=self._import_macro,
+            on_edit=self._edit_macro,
+        )
+        self.sequence_view = SequenceView(
+            self.window.content,
+            self.palette,
+            on_change=self._on_sequence_change,
+            on_pick_position=self._pick_position,
         )
         self.profiles_view = ProfilesView(
             self.window.content,
@@ -114,6 +134,7 @@ class App:
         self.stats_view = StatsView(self.window.content, self.palette)
 
         self.window.register_view("clicker", "Auto Clicker", "🎯", self.clicker_view)
+        self.window.register_view("sequence", "Sequence", "⛓", self.sequence_view)
         self.window.register_view("macros", "Macros", "🎬", self.macro_view)
         self.window.register_view("profiles", "Profiles", "📚", self.profiles_view)
         self.window.register_view("settings", "Settings", "⚙", self.settings_view)
@@ -129,6 +150,8 @@ class App:
             last = self.profiles[0]
         if last is not None:
             self.clicker_view.apply_config(last.config)
+            self._sequence = list(last.config.sequence or [])
+            self.sequence_view.set_steps(self._sequence)
 
         self.profiles_view.set_profiles(self.profiles)
         self.macro_view.set_macros(list_macros(self.store.macros_dir))
@@ -314,6 +337,42 @@ class App:
         shutil.copy(src, target)
         self._toast(f"Exported to {Path(target).name}.", "success")
 
+    def _edit_macro(self, name: str) -> None:
+        path = self.store.macros_dir / f"{name}.json"
+        try:
+            macro = load_macro(path)
+        except Exception as exc:
+            self._toast(f"Could not open macro: {exc}", "error")
+            return
+
+        def commit(updated: Macro) -> None:
+            updated.name = name
+            save_macro(updated, self.store.macros_dir)
+            self._toast(f"Saved edits to '{name}'.", "success")
+
+        MacroEditor(self.window, self.palette, macro, on_save=commit)
+
+    def _on_sequence_change(self, steps: list[SequenceStep]) -> None:
+        self._sequence = list(steps)
+        self.clicker_view.set_sequence(self._sequence)
+
+    def _restore_window(self) -> None:
+        try:
+            self.window.deiconify()
+            self.window.lift()
+            self.window.focus_force()
+        except Exception:
+            pass
+
+    def _quit_app(self) -> None:
+        try:
+            self._on_close()
+        finally:
+            try:
+                self.window.destroy()
+            except Exception:
+                pass
+
     def _import_macro(self) -> None:
         source = filedialog.askopenfilename(
             filetypes=[("Macro files", "*.json"), ("All files", "*.*")]
@@ -387,6 +446,7 @@ class App:
                 self.recorder.stop()
             self.player.stop()
             self.hotkeys.clear()
+            self.tray.stop()
         except Exception:
             pass
 

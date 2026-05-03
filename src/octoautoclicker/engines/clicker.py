@@ -12,7 +12,12 @@ try:
 except Exception:  # pragma: no cover - optional at import time
     pyautogui = None
 
-from ..models import ClickConfig
+try:
+    import pygetwindow  # type: ignore
+except Exception:  # pragma: no cover
+    pygetwindow = None
+
+from ..models import ClickConfig, SequenceStep
 
 ClickHook = Callable[[int], None]
 StateHook = Callable[[bool], None]
@@ -88,10 +93,35 @@ class ClickerEngine:
             max_clicks = (
                 int(config.repeat_count) if config.repeat_mode == "fixed_count" else None
             )
+            sequence = list(config.sequence) if config.sequence else []
+            seq_idx = 0
+            target_color = self._parse_color(config.pixel_trigger_color)
 
             while not self._stop.is_set():
-                if not self._do_click(config, jitter_px):
-                    break
+                if not self._target_window_focused(config):
+                    if self._stop.wait(0.25):
+                        break
+                    continue
+                if target_color is not None and not self._pixel_matches(
+                    config.pixel_trigger_x, config.pixel_trigger_y, target_color
+                ):
+                    if self._stop.wait(0.05):
+                        break
+                    continue
+
+                if sequence:
+                    step = sequence[seq_idx % len(sequence)]
+                    seq_idx += 1
+                    if not self._do_step(step, jitter_px):
+                        break
+                    wait = max(0.001, step.delay_ms / 1000.0)
+                else:
+                    if not self._do_click(config, jitter_px):
+                        break
+                    wait = base_interval
+                    if jitter_s > 0:
+                        wait += random.uniform(-jitter_s, jitter_s)
+                    wait = max(0.001, wait)
 
                 with self._lock:
                     self._count += 1
@@ -103,16 +133,61 @@ class ClickerEngine:
                 if max_clicks is not None and count >= max_clicks:
                     break
 
-                wait = base_interval
-                if jitter_s > 0:
-                    wait += random.uniform(-jitter_s, jitter_s)
-                wait = max(0.001, wait)
                 if self._stop.wait(wait):
                     break
         finally:
             self._running = False
             if self._on_state_change:
                 self._on_state_change(False)
+
+    def _do_step(self, step: SequenceStep, jitter_px: int) -> bool:
+        try:
+            x, y = int(step.x), int(step.y)
+            if jitter_px > 0:
+                x += random.randint(-jitter_px, jitter_px)
+                y += random.randint(-jitter_px, jitter_px)
+            pyautogui.moveTo(x, y, _pause=False)
+            if step.click_type == "double":
+                pyautogui.doubleClick(button=step.button, _pause=False)
+            else:
+                pyautogui.click(button=step.button, _pause=False)
+            return True
+        except getattr(pyautogui, "FailSafeException", Exception):
+            self._emit_error("Failsafe triggered. Sequence stopped.")
+            return False
+        except Exception as exc:
+            self._emit_error(f"Sequence step error: {exc}")
+            return False
+
+    def _target_window_focused(self, config: ClickConfig) -> bool:
+        title = (config.target_window or "").strip().lower()
+        if not title or pygetwindow is None:
+            return True
+        try:
+            active = pygetwindow.getActiveWindow()
+            if active is None:
+                return False
+            return title in (active.title or "").lower()
+        except Exception:
+            return True
+
+    @staticmethod
+    def _parse_color(value: str) -> tuple[int, int, int] | None:
+        s = (value or "").strip().lstrip("#")
+        if len(s) != 6:
+            return None
+        try:
+            return int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
+        except ValueError:
+            return None
+
+    def _pixel_matches(self, x: int, y: int, color: tuple[int, int, int]) -> bool:
+        try:
+            screenshot = pyautogui.screenshot(region=(int(x), int(y), 1, 1))
+            actual = screenshot.getpixel((0, 0))[:3]
+            return all(abs(actual[i] - color[i]) <= 8 for i in range(3))
+        except Exception:
+            return False
 
     def _do_click(self, config: ClickConfig, jitter_px: int) -> bool:
         try:

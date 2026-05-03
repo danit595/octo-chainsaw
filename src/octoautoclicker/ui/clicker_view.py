@@ -29,6 +29,11 @@ class ClickerView(ctk.CTkFrame):
         self.on_pick_position = on_pick_position
         self.on_save_profile = on_save_profile
         self._cps_window: list[float] = []
+        self.sequence: list = []
+        self.target_window_var = ctk.StringVar(value="")
+        self.pixel_x_var = ctk.StringVar(value="0")
+        self.pixel_y_var = ctk.StringVar(value="0")
+        self.pixel_color_var = ctk.StringVar(value="")
 
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=1)
@@ -62,6 +67,11 @@ class ClickerView(ctk.CTkFrame):
                 y=int(self.y_var.get() or 0),
                 jitter_ms=int(self.jitter_ms_var.get() or 0),
                 jitter_pixels=int(self.jitter_px_var.get() or 0),
+                sequence=list(self.sequence),
+                target_window=self.target_window_var.get().strip(),
+                pixel_trigger_x=int(self.pixel_x_var.get() or 0),
+                pixel_trigger_y=int(self.pixel_y_var.get() or 0),
+                pixel_trigger_color=self.pixel_color_var.get().strip(),
             )
         except ValueError:
             return None
@@ -84,6 +94,30 @@ class ClickerView(ctk.CTkFrame):
         self.y_var.set(str(config.y))
         self.jitter_ms_var.set(str(config.jitter_ms))
         self.jitter_px_var.set(str(config.jitter_pixels))
+        self.sequence = list(config.sequence or [])
+        self.target_window_var.set(config.target_window)
+        self.pixel_x_var.set(str(config.pixel_trigger_x))
+        self.pixel_y_var.set(str(config.pixel_trigger_y))
+        self.pixel_color_var.set(config.pixel_trigger_color)
+        self._update_sequence_indicator()
+
+    def set_sequence(self, sequence) -> None:
+        self.sequence = list(sequence)
+        self._update_sequence_indicator()
+
+    def _update_sequence_indicator(self) -> None:
+        if not hasattr(self, "sequence_indicator"):
+            return
+        if self.sequence:
+            self.sequence_indicator.configure(
+                text=f"⚡ Sequence active — {len(self.sequence)} step(s) override single-click",
+                text_color=self.palette["primary"],
+            )
+        else:
+            self.sequence_indicator.configure(
+                text="No sequence — single-click mode active.",
+                text_color=self.palette["text_muted"],
+            )
 
     def set_running(self, running: bool) -> None:
         if running:
@@ -279,6 +313,66 @@ class ClickerView(ctk.CTkFrame):
             corner_radius=10,
         ).grid(row=0, column=2, sticky="sew", padx=(6, 0), pady=(14, 0))
 
+        # Targeting card (window + pixel trigger)
+        target_card = Card(container, self.palette)
+        target_card.grid(row=4, column=0, sticky="ew", pady=14)
+        target_card.grid_columnconfigure(0, weight=1)
+        SectionHeader(
+            target_card,
+            self.palette,
+            "Targeting",
+            "Optional: only click when a window is focused or a pixel matches.",
+        ).grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 8))
+
+        win_row = ctk.CTkFrame(target_card, fg_color="transparent")
+        win_row.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 8))
+        win_row.grid_columnconfigure(0, weight=1)
+        LabeledEntry(
+            win_row,
+            self.palette,
+            "TARGET WINDOW (substring match, blank = any)",
+            self.target_window_var,
+        ).grid(row=0, column=0, sticky="ew")
+
+        pixel_row = ctk.CTkFrame(target_card, fg_color="transparent")
+        pixel_row.grid(row=2, column=0, sticky="ew", padx=18, pady=(0, 18))
+        for i in range(4):
+            pixel_row.grid_columnconfigure(i, weight=1)
+        LabeledEntry(pixel_row, self.palette, "PIXEL X", self.pixel_x_var).grid(
+            row=0, column=0, sticky="ew", padx=(0, 4)
+        )
+        LabeledEntry(pixel_row, self.palette, "PIXEL Y", self.pixel_y_var).grid(
+            row=0, column=1, sticky="ew", padx=4
+        )
+        LabeledEntry(
+            pixel_row, self.palette, "COLOR (#RRGGBB)", self.pixel_color_var
+        ).grid(row=0, column=2, sticky="ew", padx=4)
+        ctk.CTkButton(
+            pixel_row,
+            text="🎯  Sample (3s)",
+            command=self._sample_pixel,
+            fg_color=self.palette["surface_alt"],
+            hover_color=self.palette["border"],
+            text_color=self.palette["text"],
+            corner_radius=10,
+        ).grid(row=0, column=3, sticky="sew", padx=(4, 0), pady=(14, 0))
+
+        # Sequence indicator card
+        seq_card = Card(container, self.palette)
+        seq_card.grid(row=5, column=0, sticky="ew", pady=14)
+        seq_card.grid_columnconfigure(0, weight=1)
+        SectionHeader(
+            seq_card, self.palette, "Sequence", "Multi-target queue (edit on Sequence tab)."
+        ).grid(row=0, column=0, sticky="ew", padx=18, pady=(16, 6))
+        self.sequence_indicator = ctk.CTkLabel(
+            seq_card,
+            text="No sequence — single-click mode active.",
+            font=t.FONT_BODY,
+            text_color=self.palette["text_muted"],
+            anchor="w",
+        )
+        self.sequence_indicator.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 18))
+
         # Randomization card
         rand_card = Card(container, self.palette)
         rand_card.grid(row=3, column=0, sticky="ew", pady=14)
@@ -361,5 +455,20 @@ class ClickerView(ctk.CTkFrame):
             self.x_var.set(str(x))
             self.y_var.set(str(y))
             self.position_mode_var.set("fixed")
+
+        self.on_pick_position(receive)
+
+    def _sample_pixel(self) -> None:
+        def receive(x: int, y: int) -> None:
+            self.pixel_x_var.set(str(x))
+            self.pixel_y_var.set(str(y))
+            try:
+                import pyautogui  # type: ignore
+
+                shot = pyautogui.screenshot(region=(int(x), int(y), 1, 1))
+                r, g, b = shot.getpixel((0, 0))[:3]
+                self.pixel_color_var.set(f"#{r:02X}{g:02X}{b:02X}")
+            except Exception:
+                pass
 
         self.on_pick_position(receive)

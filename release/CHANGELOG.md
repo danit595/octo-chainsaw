@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.1.0
+### More UX wins on top of v2.0
+- New **Click Sequence** tab and engine: queue of (x, y, button, type, delay)
+  steps cycled per iteration. Profiles persist sequences alongside other
+  click settings.
+- **Targeting** card: optional active-window substring filter and pixel-color
+  trigger (with a "Sample (3s)" helper that captures the screen pixel under
+  the cursor).
+- **In-app macro editor** (Toplevel) — retime or delete events without
+  re-recording.
+- **System tray icon** with show / toggle clicker / emergency stop / quit
+  actions, generated programmatically from the active accent color.
+- Multi-resolution **app icon** (16-256 px) bundled into both the window and
+  the PyInstaller spec.
+- Tests added for sequence persistence, sequence dispatch, and color
+  parsing.
+
 ## v2.0.0
 ### Major upgrade — new UI and engine
 

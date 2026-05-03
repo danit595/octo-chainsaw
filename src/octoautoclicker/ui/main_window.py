@@ -6,9 +6,27 @@ from typing import Callable
 
 import customtkinter as ctk
 
+import os
+import sys
+from pathlib import Path
+
 from .. import __version__
 from . import theme as t
 from .widgets import SidebarButton, ToastStack
+
+
+def _icon_path() -> Path | None:
+    candidates = []
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        candidates.append(Path(base) / "assets" / "octo-icon.ico")
+    here = Path(__file__).resolve()
+    candidates.append(here.parents[3] / "assets" / "octo-icon.ico")
+    candidates.append(here.parents[2] / "assets" / "octo-icon.ico")
+    for p in candidates:
+        if p.exists():
+            return p
+    return None
 
 
 class MainWindow(ctk.CTk):
@@ -21,6 +39,12 @@ class MainWindow(ctk.CTk):
         self.geometry("1080x720")
         self.minsize(960, 640)
         self.configure(fg_color=palette["bg"])
+        icon = _icon_path()
+        if icon is not None:
+            try:
+                self.iconbitmap(default=str(icon))
+            except Exception:
+                pass
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
