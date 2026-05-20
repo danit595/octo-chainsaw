@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+### Windows install flow
+- Added `release/install.ps1` to copy `OctoAutoClicker.exe` into the local
+  Programs folder and create a Windows Start Menu shortcut.
+- Added `release/uninstall.ps1` to remove the Start Menu shortcut and installed
+  copy.
+
 ## v2.4.0
 ### Settings: delay, failsafe, sound
 - **Delayed start**: countdown N seconds before clicker actually engages.

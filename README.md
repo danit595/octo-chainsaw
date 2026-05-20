@@ -85,6 +85,25 @@ pyinstaller AutoClicker.spec
 The bundled `.exe` lands in `dist\OctoAutoClicker.exe` and ships the
 CustomTkinter assets.
 
+## Install with Start Menu launcher
+
+The release folder includes a per-user installer that copies the bundled exe
+to `%LOCALAPPDATA%\Programs\OctoAutoClicker` and creates a Start Menu shortcut:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\release\install.ps1
+```
+
+After install, launch **OctoAutoClicker** from the Windows Start Menu. To remove
+the shortcut and installed copy:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\release\uninstall.ps1
+```
+
+For an all-users install, run PowerShell as administrator and add `-AllUsers`
+to the install/uninstall command.
+
 ## Project layout
 
 ```
